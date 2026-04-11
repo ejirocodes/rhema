@@ -27,6 +27,8 @@ interface BroadcastState {
   saveTheme: (theme: BroadcastTheme) => void
   deleteTheme: (id: string) => void
   duplicateTheme: (id: string) => Promise<string | null>
+  renameTheme: (id: string, name: string) => void
+  togglePin: (id: string) => void
   setActiveTheme: (id: string) => void
   setAltActiveTheme: (id: string) => void
   setLive: (live: boolean) => void
@@ -117,6 +119,26 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       return { themes }
     })
     return newId
+  },
+
+  renameTheme: (id, name) => {
+    set((s) => {
+      const themes = s.themes.map((t) =>
+        t.id === id && !t.builtin ? { ...t, name, updatedAt: Date.now() } : t,
+      )
+      void saveCustomThemes(themes)
+      return { themes }
+    })
+  },
+
+  togglePin: (id) => {
+    set((s) => {
+      const themes = s.themes.map((t) =>
+        t.id === id ? { ...t, pinned: !t.pinned, updatedAt: Date.now() } : t,
+      )
+      void saveCustomThemes(themes)
+      return { themes }
+    })
   },
 
   syncBroadcastOutputFor: (outputId: string) => {
