@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 import { useBroadcastStore } from "@/stores"
 import { useThemeDesignerStore } from "@/stores/theme-designer-store"
+import { useThemeShortcuts } from "@/hooks/use-theme-shortcuts"
 import { Button } from "@/components/ui/button"
 import { SaveIcon, TrashIcon, XIcon } from "lucide-react"
 import { ThemeLibrary } from "@/components/broadcast/theme-library"
@@ -9,6 +10,7 @@ import { DesignCanvas } from "@/components/broadcast/design-canvas"
 import { PropertiesPanel } from "@/components/broadcast/properties-panel"
 
 export function ThemeDesigner() {
+  useThemeShortcuts()
   const isDesignerOpen = useThemeDesignerStore((s) => s.isDesignerOpen)
   const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
   const themes = useBroadcastStore((s) => s.themes)
