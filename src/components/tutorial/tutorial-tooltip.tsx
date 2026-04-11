@@ -1,3 +1,4 @@
+import { SparklesIcon, ChevronLeftIcon } from "lucide-react"
 import type { TooltipRenderProps } from "react-joyride"
 
 export function TutorialTooltip({
@@ -13,33 +14,66 @@ export function TutorialTooltip({
   return (
     <div
       {...tooltipProps}
-      className="z-[70] w-80 rounded-lg border border-border bg-card p-4 text-card-foreground shadow-lg"
+      className="z-[70] w-[340px] overflow-hidden rounded-xl border border-border/60 bg-card shadow-2xl shadow-black/20"
     >
-      <div className="mb-3 text-sm">
-        {typeof step.content === "string" ? step.content : step.content}
+      {/* Header with step icon and title */}
+      <div className="flex items-center gap-2.5 border-b border-border/40 px-4 pb-3 pt-4">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+          <SparklesIcon className="size-3.5 text-primary" />
+        </div>
+        <h3 className="text-sm font-semibold tracking-tight text-foreground">
+          {step.title ?? `Step ${index + 1}`}
+        </h3>
       </div>
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {index + 1} of {size}
-        </span>
-        <div className="flex gap-2">
+
+      {/* Body content */}
+      <div className="px-4 py-3">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
+          {step.content}
+        </p>
+      </div>
+
+      {/* Footer: progress + navigation */}
+      <div className="flex items-center justify-between border-t border-border/40 px-4 py-3">
+        {/* Progress indicator */}
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: size }, (_, i) => (
+            <div
+              key={i}
+              className={`h-1 rounded-full transition-all duration-200 ${
+                i === index
+                  ? "w-4 bg-primary"
+                  : i < index
+                    ? "w-1.5 bg-primary/40"
+                    : "w-1.5 bg-muted-foreground/20"
+              }`}
+            />
+          ))}
+          <span className="ml-1.5 text-[11px] tabular-nums text-muted-foreground/60">
+            {index + 1}/{size}
+          </span>
+        </div>
+
+        {/* Navigation buttons */}
+        <div className="flex items-center gap-1.5">
+          <button
+            {...skipProps}
+            className="rounded-md px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Skip
+          </button>
           {index > 0 && (
             <button
               {...backProps}
-              className="rounded px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-0.5 rounded-md px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
+              <ChevronLeftIcon className="size-3" />
               Back
             </button>
           )}
           <button
-            {...skipProps}
-            className="rounded px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            Skip
-          </button>
-          <button
             {...primaryProps}
-            className="rounded bg-primary px-3 py-1 text-xs text-primary-foreground hover:bg-primary/90"
+            className="rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             {isLastStep ? "Done" : "Next"}
           </button>
