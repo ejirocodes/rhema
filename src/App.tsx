@@ -9,7 +9,7 @@ export function App() {
     <>
       <Dashboard />
       <TutorialOverlay />
-      <Toaster position="bottom-left" />
+      <Toaster position="bottom-right" />
     </>
   )
 }
