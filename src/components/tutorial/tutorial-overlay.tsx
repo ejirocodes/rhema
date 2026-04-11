@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { Joyride, STATUS, type EventData } from "react-joyride"
-import { useSettingsStore } from "@/stores"
-import { useTutorialStore } from "@/stores/tutorial-store"
+import { useSettingsStore } from "@/stores/settings-store"
 import {
+  useTutorialStore,
   hydrateOnboardingState,
   persistOnboardingComplete,
 } from "@/stores/tutorial-store"
@@ -30,8 +30,7 @@ export function TutorialOverlay() {
   }, [isHydrated, onboardingComplete])
 
   const handleEvent = useCallback((data: EventData) => {
-    const { status } = data
-    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+    if (data.status === STATUS.FINISHED || data.status === STATUS.SKIPPED) {
       useTutorialStore.getState().stopTutorial()
       persistOnboardingComplete()
     }
