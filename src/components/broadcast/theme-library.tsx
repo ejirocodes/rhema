@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react"
 import { useBroadcastStore } from "@/stores"
 import { useThemeDesignerStore } from "@/stores/theme-designer-store"
+import { importTheme, exportTheme } from "@/lib/theme-io"
 import { CanvasVerse } from "@/components/ui/canvas-verse"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -183,6 +184,10 @@ function ThemeCard({
                 <PinIcon className="size-3.5" />
                 {theme.pinned ? "Unpin" : "Pin"}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void exportTheme(theme)}>
+                <DownloadIcon className="size-3.5" />
+                Export
+              </DropdownMenuItem>
               {!theme.builtin && (
                 <>
                   <DropdownMenuItem onClick={handleStartRename}>
@@ -288,13 +293,13 @@ export function ThemeLibrary() {
       </Tabs>
 
       <div className="flex gap-1.5 px-3 pb-3">
-        <Button variant="outline" className="flex-1 border-border bg-transparent">
+        <Button
+          variant="outline"
+          className="flex-1 border-border bg-transparent"
+          onClick={() => void importTheme()}
+        >
           <UploadIcon className="size-2.5" />
           Import
-        </Button>
-        <Button variant="outline" className="flex-1 border-border bg-transparent">
-          <DownloadIcon className="size-2.5" />
-          Export All
         </Button>
       </div>
 
