@@ -1,4 +1,4 @@
-import { useBroadcastStore } from "@/stores/broadcast-store"
+import { useThemeDesignerStore } from "@/stores/theme-designer-store"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { TextProperties } from "@/components/broadcast/text-properties"
@@ -6,8 +6,8 @@ import { BackgroundProperties } from "@/components/broadcast/background-properti
 import { LayoutProperties } from "@/components/broadcast/layout-properties"
 
 export function PropertiesPanel() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const selectedElement = useBroadcastStore((s) => s.selectedElement)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const selectedElement = useThemeDesignerStore((s) => s.selectedElement)
 
   if (!draftTheme) {
     return (

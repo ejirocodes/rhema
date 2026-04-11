@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { ThemeDesigner } from "@/components/broadcast/theme-designer"
 import { BroadcastSettings } from "@/components/broadcast/broadcast-settings"
-import { useAudioStore, useTranscriptStore, useBroadcastStore } from "@/stores"
+import { useAudioStore, useTranscriptStore } from "@/stores"
+import { useThemeDesignerStore } from "@/stores/theme-designer-store"
 import { useTheme } from "@/components/theme-provider"
 
 export function TransportBar() {
@@ -65,7 +66,7 @@ export function TransportBar() {
           size="icon-sm"
           title="Theme Designer"
           data-tour="theme"
-          onClick={() => useBroadcastStore.getState().setDesignerOpen(true)}
+          onClick={() => useThemeDesignerStore.getState().openDesigner()}
         >
           <PaletteIcon className="size-3.5" />
         </Button>

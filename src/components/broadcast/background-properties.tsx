@@ -1,4 +1,6 @@
-import { useBroadcastStore } from "@/stores/broadcast-store"
+import { useThemeDesignerStore } from "@/stores/theme-designer-store"
+import { open as openDialog } from "@tauri-apps/plugin-dialog"
+import { saveThemeImage } from "@/lib/theme-assets"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import {
@@ -31,8 +33,8 @@ function buildColorWithOpacity(hex: string, opacity: number): string {
 }
 
 function SolidSection() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme) return null
 
@@ -62,8 +64,8 @@ function SolidSection() {
 }
 
 function GradientSection() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme || !draftTheme.background.gradient) return null
 
@@ -179,36 +181,35 @@ function GradientSection() {
 }
 
 function ImageSection() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const editingThemeId = useThemeDesignerStore((s) => s.editingThemeId)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme || !draftTheme.background.image) return null
 
   const image = draftTheme.background.image
   const tint = image.tint ? parseColorOpacity(image.tint) : { hex: "#000000", opacity: 50 }
 
+  const handlePickImage = async () => {
+    const selected = await openDialog({
+      multiple: false,
+      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"] }],
+    })
+    if (!selected) return
+    const themeId = editingThemeId ?? draftTheme.id
+    const relativePath = await saveThemeImage(themeId, selected)
+    update("background.image.url", relativePath)
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Image Source */}
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">Background Image</label>
         <Button
           variant="outline"
           size="sm"
           className="w-full"
-          onClick={() => {
-            const input = document.createElement("input")
-            input.type = "file"
-            input.accept = "image/*"
-            input.onchange = (e) => {
-              const file = (e.target as HTMLInputElement).files?.[0]
-              if (file) {
-                const url = URL.createObjectURL(file)
-                update("background.image.url", url)
-              }
-            }
-            input.click()
-          }}
+          onClick={handlePickImage}
         >
           Change Image
         </Button>
@@ -338,8 +339,8 @@ function TransparentSection() {
 }
 
 function TextBoxSection() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme) return null
 
@@ -434,8 +435,8 @@ function TextBoxSection() {
 }
 
 export function BackgroundProperties() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme) return null
 

@@ -1,4 +1,4 @@
-import { useBroadcastStore } from "@/stores/broadcast-store"
+import { useThemeDesignerStore } from "@/stores/theme-designer-store"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import {
@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/select"
 
 export function LayoutProperties() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme) return null
 

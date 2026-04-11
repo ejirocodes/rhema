@@ -3,6 +3,7 @@ import { useRef, useEffect, useCallback } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 import { renderVerse } from "@/lib/verse-renderer"
+import { resolveThemeImageUrl } from "@/lib/theme-assets"
 import type { BroadcastTheme, VerseRenderData } from "@/types/broadcast"
 import type { NdiConfigEventPayload, NdiFrameRequest } from "@/types"
 
@@ -88,16 +89,18 @@ function BroadcastCanvas() {
     const cache = imageCacheRef.current
     if (cache.has(url)) return
 
-    const img = new Image()
-    img.onload = () => {
-      cache.set(url, img)
-      logDebug("Background image loaded", { url })
-      draw()
-    }
-    img.onerror = () => {
-      console.warn("[broadcast-output] failed to load background image", { url })
-    }
-    img.src = url
+    void resolveThemeImageUrl(url).then((resolved) => {
+      const img = new Image()
+      img.onload = () => {
+        cache.set(url, img)
+        logDebug("Background image loaded", { url })
+        draw()
+      }
+      img.onerror = () => {
+        console.warn("[broadcast-output] failed to load background image", { url })
+      }
+      img.src = resolved
+    })
   }, [draw, logDebug])
 
   const pushNdiFrame = useCallback(async () => {

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import * as fabric from "fabric"
-import { useBroadcastStore } from "@/stores"
+import { useThemeDesignerStore } from "@/stores/theme-designer-store"
 import { renderVerse } from "@/lib/verse-renderer"
+import { resolveThemeImageUrl } from "@/lib/theme-assets"
 import { Button } from "@/components/ui/button"
 import {
   SearchIcon,
@@ -34,9 +35,9 @@ export function DesignCanvas() {
     verseRegion: fabric.Rect | null
   }>({ workspace: null, referenceRegion: null, verseRegion: null })
 
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const editingThemeId = useBroadcastStore((s) => s.editingThemeId)
-  const selectedElement = useBroadcastStore((s) => s.selectedElement)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const editingThemeId = useThemeDesignerStore((s) => s.editingThemeId)
+  const selectedElement = useThemeDesignerStore((s) => s.selectedElement)
   const [zoomLevel, setZoomLevel] = useState(0)
 
   const resyncLatestTheme = useCallback(() => {
@@ -159,21 +160,21 @@ export function DesignCanvas() {
     canvas.on("selection:created", (e) => {
       const obj = e.selected?.[0]
       if (obj === objectsRef.current.referenceRegion) {
-        useBroadcastStore.getState().setSelectedElement("reference")
+        useThemeDesignerStore.getState().setSelectedElement("reference")
       } else if (obj === objectsRef.current.verseRegion) {
-        useBroadcastStore.getState().setSelectedElement("verse")
+        useThemeDesignerStore.getState().setSelectedElement("verse")
       }
     })
     canvas.on("selection:updated", (e) => {
       const obj = e.selected?.[0]
       if (obj === objectsRef.current.referenceRegion) {
-        useBroadcastStore.getState().setSelectedElement("reference")
+        useThemeDesignerStore.getState().setSelectedElement("reference")
       } else if (obj === objectsRef.current.verseRegion) {
-        useBroadcastStore.getState().setSelectedElement("verse")
+        useThemeDesignerStore.getState().setSelectedElement("verse")
       }
     })
     canvas.on("selection:cleared", () => {
-      useBroadcastStore.getState().setSelectedElement(null)
+      useThemeDesignerStore.getState().setSelectedElement(null)
     })
 
     fabricRef.current = canvas
@@ -398,7 +399,7 @@ async function syncThemeToCanvas(
   canvas.bringObjectToFront(verseRegion)
   canvas.bringObjectToFront(refRegion)
 
-  const selected = useBroadcastStore.getState().selectedElement
+  const selected = useThemeDesignerStore.getState().selectedElement
   refRegion.set({ strokeWidth: selected === "reference" ? 1 : 0 })
   verseRegion.set({ strokeWidth: selected === "verse" ? 1 : 0 })
   refRegion.setCoords()
@@ -473,10 +474,12 @@ function ensureImage(
   url: string,
   cache: Map<string, HTMLImageElement>,
   pending: Map<string, Promise<HTMLImageElement>>,
-  onReady?: () => void
+  onReady?: () => void,
 ) {
   if (cache.has(url) || pending.has(url)) return
-  const request = loadImage(url)
+  // Resolve relative theme asset paths to loadable URLs
+  const request = resolveThemeImageUrl(url)
+    .then((resolved) => loadImage(resolved))
     .then((img) => {
       cache.set(url, img)
       onReady?.()

@@ -1,4 +1,4 @@
-import { useBroadcastStore } from "@/stores/broadcast-store"
+import { useThemeDesignerStore } from "@/stores/theme-designer-store"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import {
@@ -87,8 +87,8 @@ function SectionHeader({ title, description }: { title: string; description: str
 }
 
 function FontControls({ prefix }: { prefix: "verseText" | "reference" }) {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme) return null
 
@@ -326,8 +326,8 @@ function FontControls({ prefix }: { prefix: "verseText" | "reference" }) {
 }
 
 function ReferenceProperties() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme) return null
 
@@ -369,8 +369,8 @@ function ReferenceProperties() {
 }
 
 function VerseProperties() {
-  const draftTheme = useBroadcastStore((s) => s.draftTheme)
-  const update = useBroadcastStore((s) => s.updateDraftNested)
+  const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
+  const update = useThemeDesignerStore((s) => s.updateDraftNested)
 
   if (!draftTheme) return null
 
@@ -565,7 +565,7 @@ function VerseProperties() {
 }
 
 export function TextProperties() {
-  const selectedElement = useBroadcastStore((s) => s.selectedElement)
+  const selectedElement = useThemeDesignerStore((s) => s.selectedElement)
 
   if (selectedElement === "reference") {
     return <ReferenceProperties />
