@@ -1,6 +1,8 @@
+import { useState, useEffect, useCallback } from "react"
 import { useThemeDesignerStore } from "@/stores/theme-designer-store"
 import { open as openDialog } from "@tauri-apps/plugin-dialog"
-import { saveThemeImage } from "@/lib/theme-assets"
+import { saveThemeImage, resolveThemeImageUrl } from "@/lib/theme-assets"
+import { addRecentImage, getRecentImages, type GalleryImage } from "@/lib/theme-image-gallery"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import {
@@ -184,38 +186,113 @@ function ImageSection() {
   const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
   const editingThemeId = useThemeDesignerStore((s) => s.editingThemeId)
   const update = useThemeDesignerStore((s) => s.updateDraftNested)
+  const [previewUrl, setPreviewUrl] = useState("")
+  const [recentImages, setRecentImages] = useState<GalleryImage[]>([])
+  const [showGallery, setShowGallery] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   if (!draftTheme || !draftTheme.background.image) return null
 
   const image = draftTheme.background.image
   const tint = image.tint ? parseColorOpacity(image.tint) : { hex: "#000000", opacity: 50 }
 
+  const resolvePreview = useCallback(async () => {
+    if (!image.url) { setPreviewUrl(""); return }
+    try {
+      const url = await resolveThemeImageUrl(image.url)
+      setPreviewUrl(url)
+    } catch {
+      setPreviewUrl("")
+    }
+  }, [image.url])
+
+  useEffect(() => { void resolvePreview() }, [resolvePreview])
+
+  const loadRecent = useCallback(async () => {
+    const images = await getRecentImages()
+    setRecentImages(images)
+  }, [])
+
+  useEffect(() => {
+    if (showGallery) void loadRecent()
+  }, [showGallery, loadRecent])
+
   const handlePickImage = async () => {
-    const selected = await openDialog({
-      multiple: false,
-      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"] }],
-    })
-    if (!selected) return
-    const themeId = editingThemeId ?? draftTheme.id
-    const relativePath = await saveThemeImage(themeId, selected)
+    try {
+      setUploading(true)
+      const selected = await openDialog({
+        multiple: false,
+        filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"] }],
+      })
+      if (!selected) return
+      const themeId = editingThemeId ?? draftTheme.id
+      const relativePath = await saveThemeImage(themeId, selected)
+      await addRecentImage(relativePath)
+      update("background.image.url", relativePath)
+    } catch (e) {
+      console.error("[background-properties] Image upload failed:", e)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleSelectRecent = (relativePath: string) => {
     update("background.image.url", relativePath)
+    setShowGallery(false)
   }
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">Background Image</label>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={handlePickImage}
-        >
-          Change Image
-        </Button>
+
+        {previewUrl && (
+          <div className="relative aspect-video w-full overflow-hidden rounded-md border border-border">
+            <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+          </div>
+        )}
+
+        <div className="flex gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={handlePickImage}
+            disabled={uploading}
+          >
+            {uploading ? "Uploading..." : "Browse..."}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowGallery((v) => !v)}
+          >
+            Recent
+          </Button>
+        </div>
+
+        {showGallery && (
+          <div className="flex flex-col gap-1.5 rounded-md border border-border p-2">
+            {recentImages.length === 0 ? (
+              <p className="py-2 text-center text-xs text-muted-foreground">No recent images</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-1.5">
+                {recentImages.map((img) => (
+                  <button
+                    key={img.relativePath}
+                    type="button"
+                    onClick={() => handleSelectRecent(img.relativePath)}
+                    className="group relative aspect-video overflow-hidden rounded border border-border transition-colors hover:border-primary"
+                  >
+                    <img src={img.url} alt={img.filename} className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Fit Mode */}
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">Fit Mode</label>
         <Select
