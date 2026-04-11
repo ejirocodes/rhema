@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { AnchorGrid } from "@/components/broadcast/anchor-grid"
 
 export function LayoutProperties() {
   const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
@@ -107,6 +108,84 @@ export function LayoutProperties() {
           value={[layout.textAreaHeight]}
           onValueChange={([v]) => update("layout.textAreaHeight", v)}
         />
+      </div>
+
+      {/* Anchor & Offset */}
+      <div className="flex flex-col gap-0.5 border-t pt-3 pb-1">
+        <h4 className="text-xs font-semibold">Position</h4>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <AnchorGrid
+          value={layout.anchor}
+          onChange={(v) => update("layout.anchor", v)}
+        />
+        <div className="flex flex-1 flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Offset X</label>
+            <Input
+              type="number"
+              value={layout.offsetX}
+              onChange={(e) => update("layout.offsetX", Number(e.target.value))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-muted-foreground">Offset Y</label>
+            <Input
+              type="number"
+              value={layout.offsetY}
+              onChange={(e) => update("layout.offsetY", Number(e.target.value))}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Text Align */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-muted-foreground">Text Align</label>
+        <Select
+          value={layout.textAlign}
+          onValueChange={(v) => update("layout.textAlign", v)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="left">Left</SelectItem>
+            <SelectItem value="center">Center</SelectItem>
+            <SelectItem value="right">Right</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Auto-fit Text */}
+      <div className="flex flex-col gap-1.5 border-t pt-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-muted-foreground">Auto-fit Text</label>
+          <input
+            type="checkbox"
+            checked={draftTheme.verseText.autoFit ?? false}
+            onChange={(e) => update("verseText.autoFit", e.target.checked)}
+            className="h-4 w-4 rounded border-input accent-primary"
+          />
+        </div>
+        {draftTheme.verseText.autoFit && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-muted-foreground">Min Font Size</label>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {draftTheme.verseText.minFontSize ?? 24}px
+              </span>
+            </div>
+            <Slider
+              min={12}
+              max={Math.max(12, draftTheme.verseText.fontSize - 4)}
+              step={1}
+              value={[draftTheme.verseText.minFontSize ?? 24]}
+              onValueChange={([v]) => update("verseText.minFontSize", v)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Padding */}
