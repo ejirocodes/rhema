@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import * as fabric from "fabric"
 import { useThemeDesignerStore } from "@/stores/theme-designer-store"
+import { useBroadcastStore } from "@/stores"
 import { renderVerse } from "@/lib/verse-renderer"
 import { resolveThemeImageUrl } from "@/lib/theme-assets"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ import {
   MousePointer2Icon,
   Grid3X3Icon,
   MaximizeIcon,
+  EyeIcon,
 } from "lucide-react"
 import type { BroadcastTheme, VerseRenderData } from "@/types"
 
@@ -38,7 +40,11 @@ export function DesignCanvas() {
   const draftTheme = useThemeDesignerStore((s) => s.draftTheme)
   const editingThemeId = useThemeDesignerStore((s) => s.editingThemeId)
   const selectedElement = useThemeDesignerStore((s) => s.selectedElement)
+  const liveVerse = useBroadcastStore((s) => s.liveVerse)
   const [zoomLevel, setZoomLevel] = useState(0)
+  const [useLiveVerse, setUseLiveVerse] = useState(false)
+  const previewVerseRef = useRef<VerseRenderData | null>(null)
+  previewVerseRef.current = useLiveVerse ? liveVerse : null
 
   const resyncLatestTheme = useCallback(() => {
     const latestTheme = latestThemeRef.current
@@ -49,7 +55,9 @@ export function DesignCanvas() {
       objectsRef,
       canvas,
       imageCacheRef.current,
-      imageRequestsRef.current
+      imageRequestsRef.current,
+      undefined,
+      previewVerseRef.current,
     )
   }, [])
 
@@ -198,18 +206,18 @@ export function DesignCanvas() {
     }
   }, [editingThemeId, autoZoom])
 
-  // Sync draft theme to the existing Fabric objects (throttled to 1 per frame)
   useEffect(() => {
     const canvas = fabricRef.current
     if (!canvas || !draftTheme) return
     latestThemeRef.current = draftTheme
 
-    if (rafIdRef.current) return // already scheduled
+    if (rafIdRef.current) return
     rafIdRef.current = requestAnimationFrame(() => {
       rafIdRef.current = null
       const latest = latestThemeRef.current
       const latestCanvas = fabricRef.current
       if (!latest || !latestCanvas) return
+      const verse = previewVerseRef.current
       void syncThemeToCanvas(
         latest,
         objectsRef,
@@ -225,12 +233,15 @@ export function DesignCanvas() {
             objectsRef,
             currentCanvas,
             imageCacheRef.current,
-            imageRequestsRef.current
+            imageRequestsRef.current,
+            undefined,
+            previewVerseRef.current,
           )
-        }
+        },
+        verse,
       )
     })
-  }, [draftTheme])
+  }, [draftTheme, useLiveVerse, liveVerse])
 
   useEffect(() => {
     const refRegion = objectsRef.current.referenceRegion
@@ -293,6 +304,16 @@ export function DesignCanvas() {
         <Button variant="ghost" size="icon-xs" onClick={autoZoom} className="text-muted-foreground">
           <MaximizeIcon className="size-3.5" />
         </Button>
+        <div className="mx-1 h-4 w-px bg-border/40" />
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={() => setUseLiveVerse((v) => !v)}
+          className={useLiveVerse ? "text-primary" : "text-muted-foreground"}
+          title={useLiveVerse ? "Showing live verse" : "Showing sample verse"}
+        >
+          <EyeIcon className="size-3.5" />
+        </Button>
       </div>
 
       {/* Canvas container */}
@@ -336,7 +357,8 @@ async function syncThemeToCanvas(
   canvas: fabric.Canvas,
   imageCache: Map<string, HTMLImageElement>,
   imageRequests: Map<string, Promise<HTMLImageElement>>,
-  onImageReady?: () => void
+  onImageReady?: () => void,
+  verse?: VerseRenderData | null,
 ) {
   const ws = objectsRef.current.workspace
   const refRegion = objectsRef.current.referenceRegion
@@ -355,7 +377,7 @@ async function syncThemeToCanvas(
     }
   }
 
-  const { bitmap, metrics } = renderThemeBitmap(theme, imageCache)
+  const { bitmap, metrics } = renderThemeBitmap(theme, imageCache, verse)
   ws.set({
     fill: new fabric.Pattern({
       source: bitmap,
@@ -502,7 +524,8 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 
 function renderThemeBitmap(
   theme: BroadcastTheme,
-  imageCache: Map<string, HTMLImageElement>
+  imageCache: Map<string, HTMLImageElement>,
+  verse?: VerseRenderData | null,
 ): { bitmap: HTMLCanvasElement; metrics: ReturnType<typeof renderVerse> } {
   const offscreen = document.createElement("canvas")
   offscreen.width = WS_WIDTH
@@ -510,6 +533,6 @@ function renderThemeBitmap(
   const ctx = offscreen.getContext("2d")
   if (!ctx) return { bitmap: offscreen, metrics: null }
 
-  const metrics = renderVerse(ctx, theme, DESIGNER_SAMPLE_VERSE, { imageCache })
+  const metrics = renderVerse(ctx, theme, verse ?? DESIGNER_SAMPLE_VERSE, { imageCache })
   return { bitmap: offscreen, metrics }
 }
