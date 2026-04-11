@@ -11,12 +11,12 @@ import {
 
 const FONT_FAMILIES = [
   "Geist Variable",
+  "Inter Variable",
+  "DM Sans Variable",
+  "Instrument Sans Variable",
   "Source Serif 4 Variable",
+  "Playfair Display Variable",
   "Georgia",
-  "Arial",
-  "Helvetica",
-  "Times New Roman",
-  "Courier New",
 ]
 
 const FONT_WEIGHTS = [

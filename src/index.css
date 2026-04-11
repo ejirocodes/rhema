@@ -5,6 +5,9 @@
 @import "@fontsource-variable/source-serif-4";
 @import "@fontsource/geist-mono";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/playfair-display";
+@import "@fontsource-variable/dm-sans";
+@import "@fontsource-variable/instrument-sans";
 
 @custom-variant dark (&:is(.dark *));
 
