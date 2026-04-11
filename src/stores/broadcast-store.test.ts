@@ -6,6 +6,19 @@ vi.mock("@tauri-apps/api/event", () => ({
   emitTo: emitToMock,
 }))
 
+vi.mock("@/lib/theme-persistence", () => ({
+  loadCustomThemes: vi.fn().mockResolvedValue([]),
+  saveCustomThemes: vi.fn().mockResolvedValue(undefined),
+  loadActiveThemeId: vi.fn().mockResolvedValue(null),
+  saveActiveThemeId: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("@/lib/theme-assets", () => ({
+  deleteThemeAssets: vi.fn().mockResolvedValue(undefined),
+  duplicateThemeAssets: vi.fn().mockResolvedValue(new Map()),
+  getThemeImagePaths: vi.fn().mockReturnValue([]),
+}))
+
 describe("broadcast store sync", () => {
   beforeEach(async () => {
     emitToMock.mockReset()
@@ -19,7 +32,7 @@ describe("broadcast store sync", () => {
     useBroadcastStore.setState({
       activeThemeId: theme.id,
       liveVerse: {
-      reference: "John 3:16",
+        reference: "John 3:16",
         segments: [{ text: "For God so loved the world", verseNumber: 16 }],
       },
     })

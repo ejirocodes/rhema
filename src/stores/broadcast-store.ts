@@ -2,8 +2,17 @@ import { create } from "zustand"
 import { emitTo } from "@tauri-apps/api/event"
 import type { BroadcastTheme, VerseRenderData } from "@/types"
 import { BUILTIN_THEMES } from "@/lib/builtin-themes"
-
-type SelectedElement = "verse" | "reference" | null
+import {
+  loadCustomThemes,
+  saveCustomThemes,
+  loadActiveThemeId,
+  saveActiveThemeId,
+} from "@/lib/theme-persistence"
+import {
+  deleteThemeAssets,
+  duplicateThemeAssets,
+  getThemeImagePaths,
+} from "@/lib/theme-assets"
 
 interface BroadcastState {
   themes: BroadcastTheme[]
@@ -11,63 +20,19 @@ interface BroadcastState {
   altActiveThemeId: string
   isLive: boolean
   liveVerse: VerseRenderData | null
-
-  // Designer state
-  isDesignerOpen: boolean
-  editingThemeId: string | null
-  draftTheme: BroadcastTheme | null
-  selectedElement: SelectedElement
+  themesLoaded: boolean
 
   // Theme management
-  loadThemes: () => void
+  loadThemes: () => Promise<void>
   saveTheme: (theme: BroadcastTheme) => void
   deleteTheme: (id: string) => void
-  duplicateTheme: (id: string) => void
+  duplicateTheme: (id: string) => Promise<string | null>
   setActiveTheme: (id: string) => void
   setAltActiveTheme: (id: string) => void
   setLive: (live: boolean) => void
   setLiveVerse: (verse: VerseRenderData | null) => void
   syncBroadcastOutput: () => void
   syncBroadcastOutputFor: (outputId: string) => void
-
-  // Designer actions
-  setDesignerOpen: (open: boolean) => void
-  startEditing: (themeId: string) => void
-  updateDraft: (updates: Partial<BroadcastTheme>) => void
-  updateDraftNested: (path: string, value: unknown) => void
-  saveDraft: () => void
-  discardDraft: () => void
-  setSelectedElement: (el: SelectedElement) => void
-}
-
-function setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> {
-  const keys = path.split(".")
-  const isIndex = (key: string) => /^\d+$/.test(key)
-  const result: Record<string, unknown> = Array.isArray(obj) ? [...obj] as unknown as Record<string, unknown> : { ...obj }
-
-  let current: Record<string, unknown> | unknown[] = result
-  for (let i = 0; i < keys.length - 1; i++) {
-    const key = keys[i]
-    const nextKey = keys[i + 1]
-    const currentIndex = isIndex(key) ? Number(key) : key
-    const existing = (current as Record<string, unknown> | unknown[])[currentIndex as keyof typeof current]
-    const nextContainer = Array.isArray(existing)
-      ? [...existing]
-      : existing && typeof existing === "object"
-        ? { ...(existing as Record<string, unknown>) }
-        : isIndex(nextKey)
-          ? []
-          : {}
-
-    ;(current as Record<string, unknown> | unknown[])[currentIndex as keyof typeof current] = nextContainer as never
-    current = nextContainer as Record<string, unknown> | unknown[]
-  }
-
-  const lastKey = keys[keys.length - 1]
-  const lastIndex = isIndex(lastKey) ? Number(lastKey) : lastKey
-  ;(current as Record<string, unknown> | unknown[])[lastIndex as keyof typeof current] = value as never
-
-  return result
 }
 
 export const useBroadcastStore = create<BroadcastState>((set, get) => ({
@@ -76,37 +41,84 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   altActiveThemeId: BUILTIN_THEMES[0].id,
   isLive: false,
   liveVerse: null,
-  isDesignerOpen: false,
-  editingThemeId: null,
-  draftTheme: null,
-  selectedElement: null,
+  themesLoaded: false,
 
-  loadThemes: () => {
-    set({ themes: [...BUILTIN_THEMES] })
+  loadThemes: async () => {
+    const customThemes = await loadCustomThemes()
+    const persistedActiveId = await loadActiveThemeId()
+    const allThemes = [...BUILTIN_THEMES, ...customThemes]
+
+    // Restore active theme if it still exists
+    const activeId =
+      persistedActiveId && allThemes.some((t) => t.id === persistedActiveId)
+        ? persistedActiveId
+        : BUILTIN_THEMES[0].id
+
+    set({ themes: allThemes, activeThemeId: activeId, themesLoaded: true })
   },
-  saveTheme: (theme) =>
-    set((s) => ({
-      themes: s.themes.some((t) => t.id === theme.id)
+
+  saveTheme: (theme) => {
+    set((s) => {
+      const themes = s.themes.some((t) => t.id === theme.id)
         ? s.themes.map((t) => (t.id === theme.id ? theme : t))
-        : [...s.themes, theme],
-    })),
-  deleteTheme: (id) =>
-    set((s) => ({ themes: s.themes.filter((t) => t.id !== id || t.builtin) })),
-  duplicateTheme: (id) => {
-    const s = get()
-    const source = s.themes.find((t) => t.id === id)
-    if (!source) return
-    const newTheme: BroadcastTheme = {
-      ...source,
-      id: crypto.randomUUID(),
-      name: `${source.name} Copy`,
-      builtin: false,
-      pinned: false,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    }
-    set((s) => ({ themes: [...s.themes, newTheme] }))
+        : [...s.themes, theme]
+      // Persist asynchronously — fire and forget
+      void saveCustomThemes(themes)
+      return { themes }
+    })
   },
+
+  deleteTheme: (id) => {
+    const theme = get().themes.find((t) => t.id === id)
+    if (!theme || theme.builtin) return
+
+    // Clean up image assets
+    void deleteThemeAssets(id)
+
+    set((s) => {
+      const themes = s.themes.filter((t) => t.id !== id)
+      void saveCustomThemes(themes)
+      // If deleted theme was active, fall back to first theme
+      const activeThemeId =
+        s.activeThemeId === id ? BUILTIN_THEMES[0].id : s.activeThemeId
+      return { themes, activeThemeId }
+    })
+  },
+
+  duplicateTheme: async (id) => {
+    const source = get().themes.find((t) => t.id === id)
+    if (!source) return null
+
+    const newId = crypto.randomUUID()
+    const newTheme: BroadcastTheme = structuredClone(source)
+    newTheme.id = newId
+    newTheme.name = `${source.name} Copy`
+    newTheme.builtin = false
+    newTheme.pinned = false
+    newTheme.createdAt = Date.now()
+    newTheme.updatedAt = Date.now()
+
+    // Deep copy image assets
+    const assetPaths = getThemeImagePaths(source)
+    if (assetPaths.length > 0) {
+      const pathMap = await duplicateThemeAssets(source.id, newId, assetPaths)
+      // Update image paths in the new theme
+      if (newTheme.background.image?.url) {
+        const newPath = pathMap.get(newTheme.background.image.url)
+        if (newPath) {
+          newTheme.background.image.url = newPath
+        }
+      }
+    }
+
+    set((s) => {
+      const themes = [...s.themes, newTheme]
+      void saveCustomThemes(themes)
+      return { themes }
+    })
+    return newId
+  },
+
   syncBroadcastOutputFor: (outputId: string) => {
     const s = get()
     const themeId = outputId === "alt" ? s.altActiveThemeId : s.activeThemeId
@@ -119,79 +131,27 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       verse: s.liveVerse,
     }).catch(() => {})
   },
+
   syncBroadcastOutput: () => {
     get().syncBroadcastOutputFor("main")
     get().syncBroadcastOutputFor("alt")
   },
+
   setActiveTheme: (activeThemeId) => {
     set({ activeThemeId })
+    void saveActiveThemeId(activeThemeId)
     get().syncBroadcastOutputFor("main")
   },
+
   setAltActiveTheme: (altActiveThemeId) => {
     set({ altActiveThemeId })
     get().syncBroadcastOutputFor("alt")
   },
+
   setLive: (isLive) => set({ isLive }),
+
   setLiveVerse: (liveVerse) => {
     set({ liveVerse })
     get().syncBroadcastOutput()
   },
-
-  // Designer
-  setDesignerOpen: (isDesignerOpen) => {
-    if (!isDesignerOpen) {
-      set({ isDesignerOpen, editingThemeId: null, draftTheme: null, selectedElement: null })
-    } else {
-      set({ isDesignerOpen })
-    }
-  },
-  startEditing: (themeId) => {
-    const theme = get().themes.find((t) => t.id === themeId)
-    if (!theme) return
-    set({
-      editingThemeId: themeId,
-      draftTheme: { ...theme, updatedAt: Date.now() },
-      selectedElement: null,
-    })
-  },
-  updateDraft: (updates) =>
-    set((s) => ({
-      draftTheme: s.draftTheme ? { ...s.draftTheme, ...updates, updatedAt: Date.now() } : null,
-    })),
-  updateDraftNested: (path, value) =>
-    set((s) => ({
-      draftTheme: s.draftTheme
-        ? (setNestedValue(s.draftTheme as unknown as Record<string, unknown>, path, value) as unknown as BroadcastTheme)
-        : null,
-    })),
-  saveDraft: () => {
-    const { draftTheme } = get()
-    if (!draftTheme) return
-    // If editing a builtin, save as a new custom theme
-    if (draftTheme.builtin) {
-      const customTheme = {
-        ...draftTheme,
-        id: crypto.randomUUID(),
-        name: `${draftTheme.name} (Custom)`,
-        builtin: false,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }
-      set((s) => ({
-        themes: [...s.themes, customTheme],
-        activeThemeId: customTheme.id,
-        editingThemeId: customTheme.id,
-        draftTheme: customTheme,
-      }))
-    } else {
-      get().saveTheme(draftTheme)
-    }
-  },
-  discardDraft: () => {
-    const { editingThemeId } = get()
-    if (editingThemeId) {
-      get().startEditing(editingThemeId)
-    }
-  },
-  setSelectedElement: (selectedElement) => set({ selectedElement }),
 }))
