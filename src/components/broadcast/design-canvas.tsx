@@ -45,7 +45,10 @@ export function DesignCanvas() {
   const [zoomLevel, setZoomLevel] = useState(0)
   const [useLiveVerse, setUseLiveVerse] = useState(false)
   const previewVerseRef = useRef<VerseRenderData | null>(null)
-  previewVerseRef.current = useLiveVerse ? liveVerse : null
+
+  useEffect(() => {
+    previewVerseRef.current = useLiveVerse ? liveVerse : null
+  }, [useLiveVerse, liveVerse])
 
   const resyncLatestTheme = useCallback(() => {
     const latestTheme = latestThemeRef.current
