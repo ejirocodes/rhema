@@ -600,7 +600,7 @@ export function computeVerseLayoutMetrics(
   options?: RenderOptions,
 ): VerseLayoutMetrics {
   const scale = options?.scale ?? 1
-  const scaledTheme = buildScaledTheme(theme, scale)
+  let scaledTheme = buildScaledTheme(theme, scale)
   const canvasW = scaledTheme.resolution.width
   const canvasH = scaledTheme.resolution.height
   const layout = scaledTheme.layout
@@ -631,6 +631,26 @@ export function computeVerseLayoutMetrics(
 
   if (!verse) {
     return { scaledTheme, textAreaRect, textRect, referenceRect: null, verseRect: null }
+  }
+
+  // Auto-fit: shrink verse font size until content fits within the text area
+  if (theme.verseText.autoFit) {
+    const minSize = (theme.verseText.minFontSize ?? 24) * scale
+    const referenceBlockHeight = scaledTheme.reference.fontSize * 1.5 +
+      Math.max(0, scaledTheme.layout.referenceGap ?? scaledTheme.reference.fontSize * 0.5)
+    const availableForVerse = textRectH - referenceBlockHeight
+
+    while (scaledTheme.verseText.fontSize > minSize) {
+      const measured = measureVerseHeight(ctx, scaledTheme, verse, textRectW)
+      if (measured.height <= availableForVerse) break
+      scaledTheme = {
+        ...scaledTheme,
+        verseText: {
+          ...scaledTheme.verseText,
+          fontSize: Math.max(minSize, scaledTheme.verseText.fontSize - 2 * scale),
+        },
+      }
+    }
   }
 
   const referenceHeight = scaledTheme.reference.fontSize * 1.5

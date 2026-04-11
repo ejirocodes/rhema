@@ -65,6 +65,8 @@ export interface BroadcastTheme {
     letterSpacing: number
     shadow: { color: string; blur: number; x: number; y: number } | null
     outline: { color: string; width: number } | null
+    autoFit?: boolean
+    minFontSize?: number
   }
   verseNumbers: {
     visible: boolean
