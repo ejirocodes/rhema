@@ -13,6 +13,7 @@ import {
   Grid3X3Icon,
   MaximizeIcon,
   EyeIcon,
+  PlayIcon,
 } from "lucide-react"
 import type { BroadcastTheme, VerseRenderData } from "@/types"
 
@@ -314,9 +315,39 @@ export function DesignCanvas() {
         >
           <EyeIcon className="size-3.5" />
         </Button>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground"
+          title="Preview transition"
+          onClick={() => {
+            if (!draftTheme || !containerRef.current) return
+            const el = containerRef.current.querySelector("canvas")
+            if (!el) return
+            const t = draftTheme.transition
+            const dur = `${t.duration}ms`
+            const ease = t.easing
+            const transforms: Record<string, string> = {
+              fade: "",
+              slide: t.direction === "up" ? "translateY(40px)" : t.direction === "down" ? "translateY(-40px)" : t.direction === "left" ? "translateX(40px)" : "translateX(-40px)",
+              scale: "scale(0.9)",
+              none: "",
+            }
+            el.style.transition = "none"
+            el.style.opacity = t.type === "fade" || t.type === "scale" ? "0" : "1"
+            el.style.transform = transforms[t.type] ?? ""
+            requestAnimationFrame(() => {
+              el.style.transition = `opacity ${dur} ${ease}, transform ${dur} ${ease}`
+              el.style.opacity = "1"
+              el.style.transform = ""
+              setTimeout(() => { el.style.transition = "" }, t.duration + 50)
+            })
+          }}
+        >
+          <PlayIcon className="size-3.5" />
+        </Button>
       </div>
 
-      {/* Canvas container */}
       <div ref={containerRef} className="relative min-h-0 flex-1">
         <canvas ref={canvasElRef} />
         {!draftTheme && (
