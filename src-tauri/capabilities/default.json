@@ -9,6 +9,11 @@
   ],
   "permissions": [
     "core:default",
-    "store:default"
+    "store:default",
+    "fs:default",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "dialog:default",
+    "dialog:allow-open"
   ]
 }

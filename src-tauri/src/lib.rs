@@ -18,6 +18,8 @@ pub fn run() {
         )
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(Mutex::new(state::AppState::new()))
         .manage(Mutex::new(rhema_broadcast::ndi::NdiRuntime::default()))
         .manage(Mutex::new(rhema_detection::DirectDetector::new()))
