@@ -24,19 +24,19 @@ export const TUTORIAL_STEPS: Step[] = [
   },
   {
     ...STEP_DEFAULTS,
-    target: '[data-slot="search-panel"]',
+    target: '[data-tour="book-search"]',
     title: "Book Search",
     content:
       "Look up any verse by book, chapter, and number. Switch translations from the dropdown.",
-    placement: "top",
+    placement: "bottom",
   },
   {
     ...STEP_DEFAULTS,
-    target: '[data-slot="search-panel"]',
+    target: '[data-tour="context-search"]',
     title: "Context Search",
     content:
-      'Switch to the Context tab to search by phrase or topic. Rhema uses AI to find verses that match what you\'re looking for.',
-    placement: "top",
+      "Search by phrase or topic. Rhema uses AI to find matching verses.",
+    placement: "bottom",
   },
   {
     ...STEP_DEFAULTS,
