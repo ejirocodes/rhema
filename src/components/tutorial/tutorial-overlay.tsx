@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Joyride, STATUS, type EventData } from "react-joyride"
 import { useSettingsStore } from "@/stores/settings-store"
 import {
@@ -8,11 +8,24 @@ import {
 } from "@/stores/tutorial-store"
 import { TUTORIAL_STEPS } from "./tutorial-steps"
 import { TutorialTooltip } from "./tutorial-tooltip"
+import { useTheme } from "@/components/theme-provider"
 
 export function TutorialOverlay() {
   const [isHydrated, setIsHydrated] = useState(false)
   const isRunning = useTutorialStore((s) => s.isRunning)
   const onboardingComplete = useSettingsStore((s) => s.onboardingComplete)
+  const { theme } = useTheme()
+
+  const steps = useMemo(() => {
+    const cardColor = getComputedStyle(document.documentElement)
+      .getPropertyValue("--card")
+      .trim()
+
+    return TUTORIAL_STEPS.map((step) => ({
+      ...step,
+      arrowColor: cardColor || undefined,
+    }))
+  }, [theme])
 
   useEffect(() => {
     hydrateOnboardingState().then(() => {
@@ -40,7 +53,7 @@ export function TutorialOverlay() {
 
   return (
     <Joyride
-      steps={TUTORIAL_STEPS}
+      steps={steps}
       run={isRunning}
       continuous
       buttons={["back", "primary", "skip"]}
