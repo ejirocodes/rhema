@@ -6,7 +6,6 @@ import {
   PlayIcon,
   XIcon,
   GripVerticalIcon,
-  BookOpenIcon,
 } from "lucide-react"
 import { useQueueStore, useBroadcastStore, useBibleStore } from "@/stores"
 import { toVerseRenderData } from "@/hooks/use-broadcast"
@@ -48,16 +47,6 @@ function QueueItemRow({
       </Badge>
     )
 
-  const chapterOnlyBadge = item.is_chapter_only ? (
-    <Badge
-      variant="outline"
-      className="shrink-0 gap-0.5 border-amber-500/30 bg-amber-500/10 text-[0.5rem] text-amber-600 dark:text-amber-400"
-    >
-      <BookOpenIcon className="size-2" />
-      Ch.
-    </Badge>
-  ) : null
-
   return (
     <div
       className={cn(
@@ -75,7 +64,6 @@ function QueueItemRow({
         {item.reference}
       </span>
 
-      {chapterOnlyBadge}
       {sourceBadge}
 
       <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
