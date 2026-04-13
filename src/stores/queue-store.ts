@@ -19,7 +19,7 @@ export const useQueueStore = create<QueueState>((set) => ({
   activeIndex: null,
 
   addItem: (item) =>
-    set((state) => ({ items: [...state.items, item] })),
+    set((state) => ({ items: [item, ...state.items] })),
   removeItem: (id) =>
     set((state) => ({
       items: state.items.filter((i) => i.id !== id),
