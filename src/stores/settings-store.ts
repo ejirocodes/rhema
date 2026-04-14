@@ -6,7 +6,6 @@ interface SettingsState {
   deepgramApiKey: string | null
   openaiApiKey: string | null
   claudeApiKey: string | null
-  activeTranslationId: number
   audioDeviceId: string | null
   gain: number
   autoMode: boolean
@@ -18,7 +17,6 @@ interface SettingsState {
   setDeepgramApiKey: (key: string | null) => void
   setOpenaiApiKey: (key: string | null) => void
   setClaudeApiKey: (key: string | null) => void
-  setActiveTranslationId: (id: number) => void
   setAudioDeviceId: (id: string | null) => void
   setGain: (gain: number) => void
   setAutoMode: (auto: boolean) => void
@@ -32,7 +30,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   deepgramApiKey: null,
   openaiApiKey: null,
   claudeApiKey: null,
-  activeTranslationId: 1,
   audioDeviceId: null,
   gain: 1.0,
   autoMode: false,
@@ -44,7 +41,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setDeepgramApiKey: (deepgramApiKey) => set({ deepgramApiKey }),
   setOpenaiApiKey: (openaiApiKey) => set({ openaiApiKey }),
   setClaudeApiKey: (claudeApiKey) => set({ claudeApiKey }),
-  setActiveTranslationId: (activeTranslationId) => set({ activeTranslationId }),
   setAudioDeviceId: (audioDeviceId) => set({ audioDeviceId }),
   setGain: (gain) => set({ gain }),
   setAutoMode: (autoMode) => set({ autoMode }),
